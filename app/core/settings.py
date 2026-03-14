@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
-    app_name: str = "Student Churn Risk API"
+    app_name: str = "Student Dropout Prediction API"
     upload_dir: Path = BASE_DIR / "uploads"
     allowed_extensions: set[str] = {".csv", ".xlsx"}
 
