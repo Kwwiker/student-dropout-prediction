@@ -1,5 +1,3 @@
-from http.client import HTTPException
-
 from fastapi import APIRouter, UploadFile, File
 
 from app.schemas.upload import UploadResponse
@@ -15,15 +13,16 @@ async def upload_file(file: UploadFile = File(...)):
     saved_file = FileService.save_upload_file(file)
 
     # Заглушка
-    PipelineService.process_uploaded_file(
+    file_info = PipelineService.process_uploaded_file(
         file_path=saved_file["file_path"],
         extension=saved_file["extension"],
     )
 
     return UploadResponse(
-        message="Файл успешно загружен",
+        message="Файл успешно загружен и прочитан",
         original_filename=saved_file["original_filename"],
         stored_filename=saved_file["stored_filename"],
         file_path=saved_file["file_path"],
         extension=saved_file["extension"],
+        file_info=file_info,
     )
