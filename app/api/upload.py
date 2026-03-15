@@ -12,8 +12,7 @@ router = APIRouter(prefix="/upload", tags=["Upload"])
 async def upload_file(file: UploadFile = File(...)):
     saved_file = FileService.save_upload_file(file)
 
-    # Заглушка
-    file_info = PipelineService.process_uploaded_file(
+    file_info = PipelineService.analyze_uploaded_file(
         file_path=saved_file["file_path"],
         extension=saved_file["extension"],
     )

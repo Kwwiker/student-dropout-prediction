@@ -7,7 +7,6 @@ app = FastAPI(title=settings.app_name)
 
 app.include_router(upload_router)
 
-
 @app.get("/")
 def root():
     return {"message": "Student Dropout Prediction System"}
