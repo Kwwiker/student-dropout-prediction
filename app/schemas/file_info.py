@@ -9,4 +9,10 @@ class FileStructureInfo(BaseModel):
     detected_user_id_column: str
     standardized_user_id_column: str
     requires_period_detection: bool
+    pbi_filters_found: bool
+    pbi_filters_preview: list[str] | None = None
+    period_date_from: str | None = None
+    period_date_to: str | None = None
+    detected_period_types: list[str] | None = None
+    period_warning: str | None = None
     sheets: list[str] | None = None
