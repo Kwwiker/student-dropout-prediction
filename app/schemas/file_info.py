@@ -8,7 +8,7 @@ class FileStructureInfo(BaseModel):
     normalized_columns: list[str]
     detected_user_id_column: str
     standardized_user_id_column: str
-    requires_period_detection: bool
+    progress_special_format: bool
     pbi_filters_found: bool
     pbi_filters_preview: list[str] | None = None
     period_date_from: str | None = None

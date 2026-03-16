@@ -19,3 +19,19 @@ class PipelineService:
             status_code=400,
             detail=f"Неподдерживаемое расширение файла: {extension}"
         )
+
+    @staticmethod
+    def build_working_dataframe(file_path: str, extension: str):
+        if extension == ".csv":
+            df = CSVReader.read(file_path)
+
+        elif extension == ".xlsx":
+            df, _ = ExcelReader.read(file_path)
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Неподдерживаемое расширение файла: {extension}"
+            )
+
+        return DataFrameService.build_working_dataframe(df)

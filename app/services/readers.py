@@ -1,6 +1,6 @@
 import pandas as pd
 from fastapi import HTTPException
-from app.services.extractors import is_activity_special_format, build_activity_dataframe
+from app.services.extractors import ActivityExtractor
 
 
 class CSVReader:
@@ -59,8 +59,8 @@ class ExcelReader:
                 detail=f"Первый лист Excel-файла пустой: {first_sheet_name}"
             )
 
-        if is_activity_special_format(raw_df):
-            df = build_activity_dataframe(raw_df)
+        if ActivityExtractor.is_activity_special_format(raw_df):
+            df = ActivityExtractor.build_activity_dataframe(raw_df)
         else:
             try:
                 df = pd.read_excel(file_path, sheet_name=first_sheet_name)

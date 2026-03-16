@@ -17,6 +17,17 @@ async def upload_file(file: UploadFile = File(...)):
         extension=saved_file["extension"],
     )
 
+    working_df, found_features, missing_features = PipelineService.build_working_dataframe(
+        file_path=saved_file["file_path"],
+        extension=saved_file["extension"],
+    )
+
+    print("FOUND FEATURES:", found_features)
+    print("MISSING FEATURES:", missing_features)
+    print("WORKING DF COLUMNS:", working_df.columns.tolist())
+    print("WORKING DF SHAPE:", working_df.shape)
+    print(working_df.head())
+
     return UploadResponse(
         message="Файл успешно загружен и прочитан",
         original_filename=saved_file["original_filename"],
