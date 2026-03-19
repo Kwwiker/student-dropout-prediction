@@ -33,7 +33,7 @@ class ProgressExtractor:
 
         preview_lines = [line.strip() for line in last_value.splitlines() if line.strip()]
 
-        return preview_lines[:10] if preview_lines else None
+        return preview_lines if preview_lines else None
 
     @staticmethod
     def extract_period_dates_from_filters(filters_preview: list[str]):
@@ -59,7 +59,7 @@ class ProgressExtractor:
 
     @staticmethod
     def detect_period_types(date_from: date, date_to: date):
-        days_in_period = (date_to - date_from).days + 1
+        days_in_period = (date_to - date_from).days
         period_types = []
 
         if days_in_period == 8:
@@ -73,22 +73,27 @@ class ProgressExtractor:
     @staticmethod
     def add_progress_features(prepared_df: pd.DataFrame, result_df: pd.DataFrame,
                               found_features: list[str], missing_features: list[str]):
-        filters_preview = ProgressExtractor.extract_pbi_filters_preview(prepared_df)
+        print("=== PROGRESS EXTRACTOR START ===")
+        print("PREPARED COLUMNS:", prepared_df.columns.tolist())
 
+        filters_preview = ProgressExtractor.extract_pbi_filters_preview(prepared_df)
+        print("FILTERS PREVIEW:", filters_preview)
         if not filters_preview:
             for feature_name in PROGRESS_FEATURE_RULES.keys():
                 missing_features.append(feature_name)
             return
 
-        date_from, date_to = ProgressExtractor.extract_period_dates_from_filters(filters_preview)
-
+        date_from, date_to = ProgressExtractor.extract_period_dates_from_filters(
+            filters_preview) if filters_preview else (None, None)
+        print("DATE FROM:", date_from)
+        print("DATE TO:", date_to)
         if not date_from or not date_to:
             for feature_name in PROGRESS_FEATURE_RULES.keys():
                 missing_features.append(feature_name)
             return
 
-        period_types = ProgressExtractor.detect_period_types(date_from, date_to)
-
+        period_types = ProgressExtractor.detect_period_types(date_from, date_to) if date_from and date_to else []
+        print("PERIOD TYPES:", period_types)
         if not period_types:
             for feature_name in PROGRESS_FEATURE_RULES.keys():
                 missing_features.append(feature_name)
@@ -96,6 +101,8 @@ class ProgressExtractor:
 
         for feature_name, rule in PROGRESS_FEATURE_RULES.items():
             normalized_column = normalize_column_name(rule["column"])
+            print("TRY COLUMN:", normalized_column)
+            print("COLUMN EXISTS:", normalized_column in prepared_df.columns)
 
             if normalized_column not in prepared_df.columns:
                 missing_features.append(feature_name)
@@ -107,6 +114,14 @@ class ProgressExtractor:
                 final_feature_name = f"{feature_name}_{period_type}"
                 result_df[final_feature_name] = source_series.copy()
                 found_features.append(final_feature_name)
+
+        print("NORMALIZED COLUMNS:", prepared_df.columns.tolist())
+
+        filters_preview = ProgressExtractor.extract_pbi_filters_preview(prepared_df)
+        print("FILTERS PREVIEW:", filters_preview)
+        print("DATE FROM:", date_from)
+        print("DATE TO:", date_to)
+        print("PERIOD TYPES:", period_types)
 
 
 class ActivityExtractor:

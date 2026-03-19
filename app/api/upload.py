@@ -3,6 +3,7 @@ from app.schemas.upload import UploadResponse
 from app.services.file_service import FileService
 from app.services.pipeline_service import PipelineService
 
+
 router = APIRouter(prefix="/upload", tags=["Upload"])
 
 # @router.post("/", response_model=UploadResponse)
@@ -41,13 +42,15 @@ router = APIRouter(prefix="/upload", tags=["Upload"])
 
 @router.post("/")
 async def upload_files(
-        progress_file: UploadFile | None = File(None),
+        progress_week_file: UploadFile | None = File(None),
+        progress_month_file: UploadFile | None = File(None),
         activity_file: UploadFile | None = File(None),
         survey_file: UploadFile | None = File(None),
         payments_file: UploadFile | None = File(None),
 ):
     uploaded_files = [
-        progress_file,
+        progress_week_file,
+        progress_month_file,
         activity_file,
         survey_file,
         payments_file,
@@ -65,7 +68,7 @@ async def upload_files(
         saved_file = FileService.save_upload_file(file)
         saved_files.append(saved_file)
 
-    merged_df, found_features, missing_features = PipelineService.build_merged_working_dataframe(
+    merged_df, found_features, missing_features, merged_file_path = PipelineService.build_merged_working_dataframe(
         saved_files=saved_files,
     )
 
@@ -82,4 +85,5 @@ async def upload_files(
         "merged_shape": list(merged_df.shape),
         "found_features": found_features,
         "missing_features": missing_features,
+        "merged_file_path": merged_file_path,
     }

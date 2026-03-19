@@ -14,11 +14,6 @@ FEATURE_RULES = {
         "source": "exact",
         "column": "teacher",
     },
-    "education_track": {
-        "source": "exact",
-        "column": "Цели в курсе",
-    },
-
     "presentation_rating": {
         "source": "contains",
         "pattern": "сложность подачи",
@@ -63,6 +58,10 @@ FEATURE_RULES = {
     "course_name": {
         "source": "exact",
         "column": "Курс",
+    },
+    "education_track": {
+    "source": "exact",
+    "column": "Список целей",
     },
 }
 

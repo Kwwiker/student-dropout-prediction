@@ -25,16 +25,26 @@ class DataFrameService:
 
     @staticmethod
     def build_working_dataframe(df: pd.DataFrame):
+        print("DATAFRAME_SERVICE: start")
         prepared_df, normalized_columns, detected_user_id_column = DataFrameService.prepare_dataframe(df)
+        print("PREPARED DF COLUMNS:")
+        print(prepared_df.columns.tolist())
+
 
         result_df = pd.DataFrame()
         result_df[DataFrameService.STANDARD_USER_ID_COLUMN] = prepared_df[DataFrameService.STANDARD_USER_ID_COLUMN]
 
         found_features = [DataFrameService.STANDARD_USER_ID_COLUMN]
         missing_features = []
+        print("CALLING ProgressExtractor.add_progress_features")
+        if ProgressExtractor.is_progress_special_format(normalized_columns):
+            ProgressExtractor.add_progress_features(
+                prepared_df=prepared_df,
+                result_df=result_df,
+                found_features=found_features,
+                missing_features=missing_features,
+            )
 
-        ProgressExtractor.add_progress_features(prepared_df=prepared_df, result_df=result_df,
-                                                found_features=found_features, missing_features=missing_features)
         ActivityExtractor.add_activity_features(prepared_df=prepared_df, result_df=result_df,
                                                 found_features=found_features, missing_features=missing_features)
 
