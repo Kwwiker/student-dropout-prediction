@@ -52,32 +52,21 @@ class ExcelReader:
             )
 
         first_sheet_name = sheet_names[0]
-        raw_df = ExcelReader._read_raw(file_path, first_sheet_name)
+        raw_df = pd.read_excel(file_path, sheet_name=first_sheet_name, header=None)
         if raw_df.empty:
             raise HTTPException(
                 status_code=400,
                 detail=f"Первый лист Excel-файла пустой: {first_sheet_name}"
             )
 
-        if ActivityExtractor.is_activity_special_format(raw_df):
-            df = ActivityExtractor.build_activity_dataframe(raw_df)
-        else:
-            try:
-                df = pd.read_excel(file_path, sheet_name=first_sheet_name)
-            except Exception:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Не удалось прочитать первый лист Excel-файла: {first_sheet_name}"
-                )
+        return raw_df
 
-        return df, sheet_names
-
-    @staticmethod
-    def _read_raw(file_path: str, sheet_name: str):
-        try:
-            return pd.read_excel(file_path, sheet_name=sheet_name, header=None)
-        except Exception:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Не удалось прочитать лист Excel-файла: {sheet_name}"
-            )
+    # @staticmethod
+    # def _read_raw(file_path: str, sheet_name: str):
+    #     try:
+    #         return pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+    #     except Exception:
+    #         raise HTTPException(
+    #             status_code=400,
+    #             detail=f"Не удалось прочитать лист Excel-файла: {sheet_name}"
+    #         )

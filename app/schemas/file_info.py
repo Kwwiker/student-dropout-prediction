@@ -16,3 +16,10 @@ class FileStructureInfo(BaseModel):
     detected_period_types: list[str] | None = None
     period_warning: str | None = None
     sheets: list[str] | None = None
+
+
+class FileInfo(BaseModel):
+    original_filename: str
+    stored_filename: str
+    path: str
+    extension: str

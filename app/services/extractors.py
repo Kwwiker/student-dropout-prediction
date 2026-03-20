@@ -2,6 +2,7 @@ import pandas as pd
 import re
 from datetime import datetime, date
 from fastapi import HTTPException
+
 from app.core.feature_rules import PROGRESS_FEATURE_RULES
 from app.utils.dataframe import normalize_column_name
 
@@ -13,14 +14,45 @@ class ProgressExtractor:
     }
 
     @staticmethod
-    def is_progress_special_format(columns: list[str]):
-        return any(metric in columns for metric in ProgressExtractor.PERIOD_DEPENDENT_METRICS)
+    def is_progress_df(df: pd.DataFrame):
+        """
+        Идентифицирует файл прогресса учеников по наличию колонок из PERIOD_DEPENDENT_METRICS
+        """
+        return any(metric in df.columns for metric in ProgressExtractor.PERIOD_DEPENDENT_METRICS)
 
     @staticmethod
-    def extract_pbi_filters_preview(df: pd.DataFrame):
-        if df.empty or df.shape[1] == 0:
+    def process_progress_period(df: pd.DataFrame):
+        """
+        Создаёт копии столбцов с данными об успеваемости учеников с пометками о периоде
+        """
+        pbi_filters = ProgressExtractor.extract_pbi_filters(df)
+        if not pbi_filters:
             return None
 
+        date_from, date_to = ProgressExtractor.extract_dates(pbi_filters)
+        if not date_from or not date_to:
+            return None
+
+        period_types = ProgressExtractor.detect_period_types(date_from, date_to)
+        if not period_types:
+            return None
+
+        for feature_name, rule in PROGRESS_FEATURE_RULES.items():
+            column_name = normalize_column_name(rule["column"])
+            if column_name not in df.columns:
+                continue
+
+            for period_type in period_types:
+                column_name_with_period = f"{feature_name}_{period_type}"
+                df[column_name_with_period] = df[column_name].copy()
+
+        return df
+
+    @staticmethod
+    def extract_pbi_filters(df: pd.DataFrame):
+        """
+        Извлекает фильтры PBI, найденные в файле
+        """
         first_column = df.iloc[:, 0].dropna()
 
         if first_column.empty:
@@ -31,15 +63,18 @@ class ProgressExtractor:
         if "Примененные фильтры:" not in last_value:
             return None
 
-        preview_lines = [line.strip() for line in last_value.splitlines() if line.strip()]
+        filters = [line.strip() for line in last_value.splitlines() if line.strip()]
 
-        return preview_lines if preview_lines else None
+        return filters if filters else None
 
     @staticmethod
-    def extract_period_dates_from_filters(filters_preview: list[str]):
+    def extract_dates(filters: list[str]):
+        """
+        Извлекает даты, найденные в фильтрах PBI
+        """
         date_pattern = r"(\d{2}\.\d{2}\.\d{4})"
 
-        for line in filters_preview:
+        for line in filters:
             if "Date начиная с" not in line:
                 continue
 
@@ -59,10 +94,16 @@ class ProgressExtractor:
 
     @staticmethod
     def detect_period_types(date_from: date, date_to: date):
-        days_in_period = (date_to - date_from).days
+        """
+        Определяет за какой период данные на основе дат из применённых фильтров.
+        Данные в PBI приходят утром следующего дня, поэтому для выгрузки за неделю выбираются два дня с одинаковым
+        днём недели. В фильтре дата отображается в формате "до какой-то даты". Чтобы определить за какой период
+        данные, считается разница дат и вычитается 1 для компенсации предлога "до"
+        """
+        days_in_period = (date_to - date_from).days - 1
         period_types = []
 
-        if days_in_period == 8:
+        if days_in_period == 7:
             period_types.append("week")
 
         if date_from.day == 1:
@@ -70,64 +111,11 @@ class ProgressExtractor:
 
         return period_types
 
-    @staticmethod
-    def add_progress_features(prepared_df: pd.DataFrame, result_df: pd.DataFrame,
-                              found_features: list[str], missing_features: list[str]):
-        print("=== PROGRESS EXTRACTOR START ===")
-        print("PREPARED COLUMNS:", prepared_df.columns.tolist())
-
-        filters_preview = ProgressExtractor.extract_pbi_filters_preview(prepared_df)
-        print("FILTERS PREVIEW:", filters_preview)
-        if not filters_preview:
-            for feature_name in PROGRESS_FEATURE_RULES.keys():
-                missing_features.append(feature_name)
-            return
-
-        date_from, date_to = ProgressExtractor.extract_period_dates_from_filters(
-            filters_preview) if filters_preview else (None, None)
-        print("DATE FROM:", date_from)
-        print("DATE TO:", date_to)
-        if not date_from or not date_to:
-            for feature_name in PROGRESS_FEATURE_RULES.keys():
-                missing_features.append(feature_name)
-            return
-
-        period_types = ProgressExtractor.detect_period_types(date_from, date_to) if date_from and date_to else []
-        print("PERIOD TYPES:", period_types)
-        if not period_types:
-            for feature_name in PROGRESS_FEATURE_RULES.keys():
-                missing_features.append(feature_name)
-            return
-
-        for feature_name, rule in PROGRESS_FEATURE_RULES.items():
-            normalized_column = normalize_column_name(rule["column"])
-            print("TRY COLUMN:", normalized_column)
-            print("COLUMN EXISTS:", normalized_column in prepared_df.columns)
-
-            if normalized_column not in prepared_df.columns:
-                missing_features.append(feature_name)
-                continue
-
-            source_series = prepared_df[normalized_column]
-
-            for period_type in period_types:
-                final_feature_name = f"{feature_name}_{period_type}"
-                result_df[final_feature_name] = source_series.copy()
-                found_features.append(final_feature_name)
-
-        print("NORMALIZED COLUMNS:", prepared_df.columns.tolist())
-
-        filters_preview = ProgressExtractor.extract_pbi_filters_preview(prepared_df)
-        print("FILTERS PREVIEW:", filters_preview)
-        print("DATE FROM:", date_from)
-        print("DATE TO:", date_to)
-        print("PERIOD TYPES:", period_types)
-
 
 class ActivityExtractor:
 
     @staticmethod
-    def is_activity_special_format(raw_df: pd.DataFrame):
+    def is_activity_df(raw_df: pd.DataFrame):
         """
         Идентифицирует файл активности учеников по значению "День"
         в левой верхней ячейке
@@ -143,7 +131,7 @@ class ActivityExtractor:
         return str(top_left_value).strip() == "День"
 
     @staticmethod
-    def build_activity_dataframe(raw_df: pd.DataFrame):
+    def process_activity_headers(raw_df: pd.DataFrame):
         """
         Собирает файл активности учеников, преобразуя две строки
         заголовков в одну. Заголовки берутся из второй строки
@@ -158,7 +146,7 @@ class ActivityExtractor:
 
         header_row_1 = raw_df.iloc[0]
         header_row_2 = raw_df.iloc[1]
-        data_df = raw_df.iloc[2:].copy()
+        df = raw_df.iloc[2:].copy()
 
         columns = []
         use_first_row_for_headers = False
@@ -177,55 +165,21 @@ class ActivityExtractor:
 
             columns.append(column_name)
 
-        data_df.columns = columns
-        return data_df.reset_index(drop=True)
+        df.columns = columns
+        return df.reset_index(drop=True)
 
     @staticmethod
-    def add_activity_features(prepared_df: pd.DataFrame, result_df: pd.DataFrame, found_features: list[str],
-                              missing_features: list[str]):
-        total_column_index = ActivityExtractor._find_total_column_index(prepared_df.columns.tolist())
+    def add_active_days_pct_column(df: pd.DataFrame):
+        """
+        Создаёт производный столбец доли активных дней за период, попавший выгрузку.
+        Добавляется раньше остальных производных столбцов, чтобы не нести дальше много столбцов привязанных к дате
+        """
+        total_index = df.columns.get_loc("Total")
+        last_date_column_name = df.columns[total_index - 1]
 
-        if total_column_index is None:
-            missing_features.append("active_days_pct")
-            return
+        lines = [line.strip() for line in last_date_column_name.splitlines()]
+        number = int(lines[0])
 
-        if total_column_index == 0:
-            missing_features.append("active_days_pct")
-            return
+        df["active_days_pct"] = (df["Total"] / number).clip(upper=1)
 
-        last_day_column_name = prepared_df.columns[total_column_index - 1]
-        days_in_export = ActivityExtractor._extract_day_number_from_column_name(last_day_column_name)
-
-        if not days_in_export or days_in_export <= 0:
-            missing_features.append("active_days_pct")
-            return
-
-        total_series = pd.to_numeric(
-            prepared_df.iloc[:, total_column_index],
-            errors="coerce",
-        )
-
-        result_df["active_days_pct"] = (total_series / days_in_export).clip(upper=1)
-        found_features.append("active_days_pct")
-
-    @staticmethod
-    def _find_total_column_index(columns: list):
-        for index, column in enumerate(columns):
-            if str(column).strip().lower() == "total":
-                return index
-        return None
-
-    @staticmethod
-    def _extract_day_number_from_column_name(column_name):
-        column_text = str(column_name).strip()
-
-        lines = [line.strip() for line in column_text.splitlines() if line.strip()]
-        if not lines:
-            return None
-
-        first_line = lines[0]
-
-        if first_line.isdigit():
-            return int(first_line)
-
-        return None
+        return df

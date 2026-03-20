@@ -1,6 +1,15 @@
 FEATURE_RULES = {
-    "user_id": {
-        "source": "user_id",
+    "transaction_date": {
+        "source": "exact",
+        "column": "Дата операции",
+    },
+    "current_month": {
+        "source": "exact",
+        "column": "Месяц обучения",
+    },
+    "course_name": {
+        "source": "exact",
+        "column": "Курс",
     },
     "subject_name": {
         "source": "exact",
@@ -45,23 +54,30 @@ FEATURE_RULES = {
     "education_style": {
         "source": "contains",
         "pattern": "проходить курс",
-
     },
-    "transaction_date": {
+    "completed_hw_pct_week": {
         "source": "exact",
-        "column": "Дата операции",
+        "column": "completed_hw_pct_week",
     },
-    "current_month": {
+    "earned_points_pct_week": {
         "source": "exact",
-        "column": "Месяц обучения",
+        "column": "earned_points_pct_week",
     },
-    "course_name": {
+    "completed_hw_pct_month": {
         "source": "exact",
-        "column": "Курс",
+        "column": "completed_hw_pct_month",
+    },
+    "earned_points_pct_month": {
+        "source": "exact",
+        "column": "earned_points_pct_month",
     },
     "education_track": {
-    "source": "exact",
-    "column": "Список целей",
+        "source": "exact",
+        "column": "Список целей",
+    },
+    "active_days_pct": {
+        "source": "exact",
+        "column": "active_days_pct",
     },
 }
 

@@ -13,4 +13,4 @@ def normalize_column_name(column_name: str):
 
 
 def normalize_column_names(columns: list[str]):
-    return [normalize_column_name(column) for column in columns]
+    return [normalize_column_name(str(column)) for column in columns]

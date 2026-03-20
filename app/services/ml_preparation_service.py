@@ -120,7 +120,7 @@ class MLPreparationService:
     @staticmethod
     def _fill_survey_missing_values(df: pd.DataFrame):
         all_survey_categorical_columns = (
-            MLPreparationService.SURVEY_CATEGORICAL_COLUMNS + ["education_track"]
+                MLPreparationService.SURVEY_CATEGORICAL_COLUMNS + ["education_track"]
         )
 
         for column in all_survey_categorical_columns:

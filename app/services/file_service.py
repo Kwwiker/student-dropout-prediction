@@ -4,6 +4,7 @@ from fastapi import UploadFile, HTTPException
 import shutil
 
 from app.core.settings import settings
+from app.schemas.file_info import FileInfo
 from app.utils.files import ensure_directory, generate_unique_filename, is_allowed_extension, get_file_extension
 
 
@@ -25,9 +26,9 @@ class FileService:
         with destination.open("wb") as buffer:
             shutil.copyfileobj(upload_file.file, buffer)
 
-        return {
-            "original_filename": upload_file.filename,
-            "stored_filename": unique_filename,
-            "file_path": str(destination),
-            "extension": get_file_extension(upload_file.filename),
-        }
+        return FileInfo(
+            original_filename=upload_file.filename,
+            stored_filename=unique_filename,
+            path=str(destination),
+            extension=get_file_extension(upload_file.filename),
+        )
